@@ -55,9 +55,14 @@ test('log is created, appended, deduplicated, escaped, and config is read on eac
   const log = await appendSession(config, session);
   const first = await fs.readFile(log, 'utf8');
   assert.match(first, /^# Pomodoro Log/);
-  assert.match(first, /\*\*Duration:\*\* 1 minute/);
+  assert.match(first, /\*\*Planned:\*\* 1 minute/);
   assert.match(first, /\*\*Completed:\*\* \d{4}-\d\d-\d\dT/);
   assert.match(first, /\*\*Date:\*\* \d{4}-\d\d-\d\d/);
+  assert.match(first, /\*\*Started:\*\* \d{4}-\d\d-\d\dT/);
+  assert.match(first, /\*\*Wall time:\*\*/);
+  assert.match(first, /\*\*Active focus:\*\*/);
+  assert.match(first, /\*\*Paused:\*\* .* \(0 pauses, 0 resumes\)/);
+  assert.match(first, /\*\*Focus efficiency:\*\* 100%/);
   assert.ok(!first.includes('\n## injected'));
   await appendSession(config, session);
   assert.equal(await fs.readFile(log, 'utf8'), first);
@@ -107,4 +112,30 @@ test('activity journal appends daily entries, dedupes, and validates the vault',
   await fs.writeFile(config, JSON.stringify({ vaultPath: '' }));
   await assert.rejects(appendEvent(config, { kind: 'started', id: randomUUID(), at: Date.now() }), /vaultPath/);
   await assert.rejects(appendEvent(path.join(root, 'nope.json'), { kind: 'started', id: randomUUID(), at: Date.now() }));
+});
+
+test('tracks active focus, pauses and resumes across segments for the agent log', () => {
+  let now = 0;
+  const timer = new Pomodoro(() => now);
+  timer.start(1, 'deep work');            // planned 60s
+  now += 10000; timer.pause();            // segment 1: +10s
+  assert.equal(timer.state.activeMs, 10000);
+  assert.equal(timer.state.pauseCount, 1);
+  now += 20000; timer.start(1, 'x');      // resume (paused -> running)
+  assert.equal(timer.state.resumeCount, 1);
+  now += 5000; timer.pause();             // segment 2: +5s
+  assert.equal(timer.state.activeMs, 15000);
+  assert.equal(timer.state.pauseCount, 2);
+  now += 30000; timer.start(1, 'x');      // resume again
+  assert.equal(timer.state.resumeCount, 2);
+  now += 45000;                           // segment 3: +45s -> exactly 60s
+  assert.equal(timer.tick(), true);
+  assert.equal(timer.state.status, 'complete');
+  assert.equal(timer.state.activeMs, 60000);
+  assert.equal(timer.state.completedAt, 110000);
+  assert.equal(timer.state.segmentStartedAt, null);
+  const entry = logEntry(timer.state);
+  assert.match(entry, /\*\*Active focus:\*\* 1m/);
+  assert.match(entry, /\*\*Paused:\*\* .* \(2 pauses, 2 resumes\)/);
+  assert.match(entry, /\*\*Focus efficiency:\*\* 100%/);
 });

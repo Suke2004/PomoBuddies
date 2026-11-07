@@ -41,7 +41,8 @@ async function saveCompletion() {
     savedPath = await appendSession(configPath, clock.state);
     clock.state.saved = true;
     persist();
-    recordEvent('completed', { sessionId: clock.state.id, minutes: clock.state.minutes, label: clock.state.label });
+    recordEvent('completed', { sessionId: clock.state.id, minutes: clock.state.minutes, label: clock.state.label,
+      activeMs: clock.state.activeMs, pauseCount: clock.state.pauseCount, resumeCount: clock.state.resumeCount });
   } catch (error) {
     errorMessage = `Obsidian save failed: ${error.message}`;
     clock.state.saved = false;

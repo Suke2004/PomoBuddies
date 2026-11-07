@@ -16,7 +16,8 @@ class Pomodoro {
   constructor(now = Date.now) {
     this.now = now;
     this.state = { status: 'idle', minutes: 25, label: '', remainingMs: 25 * 60000,
-      deadline: null, id: null, completedAt: null, saved: false };
+      deadline: null, id: null, completedAt: null, saved: false,
+      startedAt: null, segmentStartedAt: null, activeMs: 0, pauseCount: 0, resumeCount: 0 };
   }
   remainingMs() {
     return this.state.status === 'running'
@@ -30,17 +31,25 @@ class Pomodoro {
     if (this.state.status === 'complete' && !this.state.saved) {
       throw new Error('Save the completed session before starting another.');
     }
-    if (this.state.status !== 'paused') {
+    const resumed = this.state.status === 'paused';
+    if (!resumed) {
       label = validateInput(minutes, label);
       this.state = { status: 'idle', minutes, label, remainingMs: minutes * 60000,
-        deadline: null, id: randomUUID(), completedAt: null, saved: false };
+        deadline: null, id: randomUUID(), completedAt: null, saved: false,
+        startedAt: null, segmentStartedAt: null, activeMs: 0, pauseCount: 0, resumeCount: 0 };
     }
+    if (resumed) this.state.resumeCount++;
+    if (this.state.startedAt === null) this.state.startedAt = this.now();
     this.state.deadline = this.now() + this.state.remainingMs;
+    this.state.segmentStartedAt = this.now();
     this.state.status = 'running';
   }
   pause() {
     if (this.state.status !== 'running') return;
     if (this.tick()) return;
+    this.state.activeMs += this.now() - this.state.segmentStartedAt;
+    this.state.segmentStartedAt = null;
+    this.state.pauseCount++;
     this.state.remainingMs = this.remainingMs();
     this.state.deadline = null;
     this.state.status = 'paused';
@@ -50,11 +59,13 @@ class Pomodoro {
       throw new Error('Save the completed session before resetting.');
     }
     Object.assign(this.state, { status: 'idle', remainingMs: this.state.minutes * 60000,
-      deadline: null, id: null, completedAt: null, saved: false });
+      deadline: null, id: null, completedAt: null, saved: false,
+      startedAt: null, segmentStartedAt: null, activeMs: 0, pauseCount: 0, resumeCount: 0 });
   }
   tick() {
     if (this.state.status !== 'running' || this.remainingMs() > 0) return false;
-    Object.assign(this.state, { status: 'complete', remainingMs: 0,
+    if (this.state.segmentStartedAt !== null) this.state.activeMs += this.now() - this.state.segmentStartedAt;
+    Object.assign(this.state, { status: 'complete', remainingMs: 0, segmentStartedAt: null,
       completedAt: this.state.deadline, deadline: null });
     return true;
   }
@@ -68,12 +79,18 @@ class Pomodoro {
       || (state.status === 'complete' && !Number.isFinite(state.completedAt))) {
       throw new Error('Saved timer state is invalid.');
     }
+    state.startedAt = state.startedAt ?? null;
+    state.segmentStartedAt = state.segmentStartedAt ?? null;
+    state.activeMs = Number.isFinite(state.activeMs) ? state.activeMs : 0;
+    state.pauseCount = Number.isInteger(state.pauseCount) && state.pauseCount >= 0 ? state.pauseCount : 0;
+    state.resumeCount = Number.isInteger(state.resumeCount) && state.resumeCount >= 0 ? state.resumeCount : 0;
     this.state = { ...state };
     if (state.status === 'running') {
       // A crashed/closed application must not silently finish a session.
       this.state.remainingMs = Math.max(1000, Math.min(state.remainingMs, state.deadline - this.now()));
       this.state.status = 'paused';
       this.state.deadline = null;
+      this.state.segmentStartedAt = null;
     }
   }
 }
@@ -83,17 +100,35 @@ function localDate(date) {
     .map((value, index) => String(value).padStart(index ? 2 : 4, '0')).join('-');
 }
 
+function fmtDuration(ms) {
+  const total = Math.max(0, Math.round(ms / 1000));
+  const minutes = Math.floor(total / 60), seconds = total % 60;
+  return seconds ? `${minutes}m ${seconds}s` : `${minutes}m`;
+}
+
 function logEntry(session) {
   const label = validateInput(session.minutes, session.label) || 'Focus session';
   const date = new Date(session.completedAt);
   if (!/^[\da-f-]{36}$/i.test(session.id || '') || !Number.isFinite(date.getTime())) {
     throw new Error('Completed session is invalid.');
   }
+  const plannedMs = session.minutes * 60000;
+  const activeMs = Number.isFinite(session.activeMs) ? session.activeMs : plannedMs;
+  const started = session.startedAt ? new Date(session.startedAt) : date;
+  const wallMs = Math.max(0, date.getTime() - started.getTime());
+  const pausedMs = Math.max(0, wallMs - activeMs);
+  const pauses = session.pauseCount || 0, resumes = session.resumeCount || 0;
+  const efficiency = plannedMs > 0 ? Math.round(100 * activeMs / plannedMs) : 100;
   const escaped = label.replace(/[\\`*_{}\[\]<>]/g, '\\$&');
   return `\n## ${localDate(date)} · ${date.toLocaleTimeString('en-GB')}\n\n`
     + `- **Date:** ${localDate(date)}\n- **Label:** ${escaped}\n`
-    + `- **Duration:** ${session.minutes} minute${session.minutes === 1 ? '' : 's'}\n`
+    + `- **Planned:** ${session.minutes} minute${session.minutes === 1 ? '' : 's'}\n`
+    + `- **Started:** ${started.toISOString()}\n`
     + `- **Completed:** ${date.toISOString()}\n`
+    + `- **Wall time:** ${fmtDuration(wallMs)} (start to completion)\n`
+    + `- **Active focus:** ${fmtDuration(activeMs)}\n`
+    + `- **Paused:** ${fmtDuration(pausedMs)} (${pauses} pause${pauses === 1 ? '' : 's'}, ${resumes} resume${resumes === 1 ? '' : 's'})\n`
+    + `- **Focus efficiency:** ${efficiency}% of planned time\n`
     + `<!-- pomodoro-session: ${session.id} -->\n`;
 }
 
@@ -128,7 +163,11 @@ function eventLine(event) {
   const time = date.toLocaleTimeString('en-GB');
   const minute = `${event.minutes || 1} min${(event.minutes || 1) === 1 ? '' : 's'}`;
   const head = `- ${date.toLocaleDateString('en-GB')} ${time} · ${event.kind}`;
-  if (event.kind === 'started' || event.kind === 'completed') return `${head}: **${escaped}** (${minute})`;
+  if (event.kind === 'started') return `${head}: **${escaped}** (${minute})`;
+  if (event.kind === 'completed') {
+    const active = Number.isFinite(event.activeMs) ? ` · ${fmtDuration(event.activeMs)} active` : '';
+    return `${head}: **${escaped}** (${minute}${active})`;
+  }
   if (event.kind === 'paused' || event.kind === 'resumed' || event.kind === 'reset') return `${head}: **${escaped}**`;
   return head;
 }
