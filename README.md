@@ -1,40 +1,82 @@
-# Pomodoro Timer
+# PomoBuddies
 
-Run `npm install`, then `npm start` from `D:\usr\pomodoro-hermes`:
+A floating, always-on-top pixel-art Pomodoro timer built with Electron. Twelve pixel buddies — cat, puppy, avocado, tomato, Ben, Four Arms, Harry, Hedwig, Pikachu, Captain America, Hulk, and Iron Man — keep you company while a belly countdown ticks toward the end of your focus block. When a session completes, it logs straight to your Obsidian vault.
 
-```powershell
-Set-Location D:\usr\pomodoro-hermes
+## Features
+
+- **Compact floating window** (280 × 340) — frameless, transparent, always-on-top, draggable by its character.
+- **Belly countdown** — the character's circular belly fills as time elapses.
+- **Buddy Arcade** — open the gear to expand the window (280 × 600) and:
+  - pick a buddy from a live stage, previous/next arrows, or a scrolling character shelf (arrow-key navigable)
+  - set a duration with a slider/stepper or quick presets
+  - add a label for the session
+  - Start / Pause / Reset, save status, and a Close-timer button
+- **Obsidian logging** — completed sessions append to `Pomodoro/Log.md` in your vault.
+- **State safety** — closing the timer mid-run pauses and preserves it; it reopens paused. Timer state is written atomically (temp file + `fsync` + rename), so a crash never corrupts it.
+- **Duplicate-proof logs** — each session carries a unique ID; interrupted or failed saves are retained and retryable via the UI.
+- **Respects your system** — `prefers-reduced-motion` is honored, and theme choice persists in `localStorage`.
+
+## Quick start
+
+```bash
+cd D:\usr\pomodoro-hermes
+npm install
 npm start
 ```
 
-For Hermes: "Launch my existing Pomodoro Timer by running npm start in
-D:\usr\pomodoro-hermes. Open the gear, set my requested duration and label, and
-press Start. Keep an already running session, or resume a paused one. Use the
-existing Obsidian configuration and keep the floating window open."
+## Configuration
 
-The UI is a small, draggable,
-always-on-top Electron clock with twelve pixel-art buddies: cat, puppy, avocado,
-tomato, Ben, Four Arms, Harry, Hedwig, Pikachu, Captain America, Hulk, and Iron Man.
-The compact 280 × 340 window shows only the character, its belly
-countdown, and a small gear button. Drag the character to move it. Open the gear
-for the Buddy Arcade: a live character stage, previous/next arrows, a scrolling
-character shelf, a duration slider and stepper, quick presets, label,
-Start/Pause/Reset, save status, and Close timer. Arrow keys navigate the focused
-character shelf. The window expands to 280 × 600 while the arcade is open and
-returns to its small size when closed. Reduced motion is respected.
-Starting a timer closes the settings. The circular fill shows elapsed time.
+Edit `config.json` and point `vaultPath` at an existing Obsidian vault:
 
-Change `vaultPath` in `config.json` to an existing Obsidian vault. Completed sessions
-append to `Pomodoro/Log.md`; the config is reread for each save. An empty label is
-logged as “Focus session.” Dates use the desktop's local timezone and completion
-timestamps are unambiguous ISO UTC values.
+```json
+{
+  "vaultPath": "G:\\My Drive\\Obsidian Sync"
+}
+```
 
-Closing a running timer pauses and preserves it. It reopens paused. Interrupted
-or failed log saves are retained locally and can be retried; a session identifier
-prevents duplicate entries. Reset discards an unfinished session, not a completed
-session awaiting save. Theme selection persists in localStorage.
+The path is reread on every session save, so edits apply immediately.
 
-`npm run test:pomodoro` checks timer and logging behavior.
-`npm run test:pomodoro:e2e` launches Electron and runs a real one-minute session
-against an isolated temporary vault, including restart checks. Test runs use
-`POMODORO_CONFIG_PATH` and `POMODORO_DATA_DIR` to leave the real vault and timer state untouched.
+## Logging behavior
+
+- Completed sessions append to `Pomodoro/Log.md` inside the vault.
+- An empty label is logged as “Focus session.”
+- Dates use your desktop's local timezone; completion timestamps are unambiguous ISO UTC values.
+- Each session has a unique ID — retrying a failed save never creates duplicates.
+- Reset discards an *unfinished* session only; a completed session awaiting save is protected.
+
+## Tests
+
+```bash
+# Unit tests — timer logic, validation, logging, dedupe
+npm run test:pomodoro
+
+# End-to-end — launches Electron and runs a real one-minute session
+# against an isolated temporary vault, including restart checks
+npm run test:pomodoro:e2e
+```
+
+Test runs use `POMODORO_CONFIG_PATH` and `POMODORO_DATA_DIR` so your real vault and timer state are never touched.
+
+## Project structure
+
+```
+main.js              Electron main process: window, state persistence, IPC, logging
+preload.js           Context-isolated bridge (no nodeIntegration)
+index.html           UI markup
+renderer.js          UI logic + Buddy Arcade
+styles.css           Pixel-art theming
+pomodoro-core.js     Framework-free timer logic + Obsidian log writer
+config.json          Vault path setting
+completion.wav       Session-complete sound
+tests/               Unit + e2e suites
+```
+
+## Security
+
+- `contextIsolation: true`, `sandbox: true`, no `nodeIntegration`.
+- All IPC handlers validate the sender; window opens and navigation are denied.
+- Window-resize and move IPC calls validate their payloads.
+
+## License
+
+Private / personal tool — no license is applied. See the project owner before redistributing.
