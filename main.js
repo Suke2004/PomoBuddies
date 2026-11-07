@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain, Notification } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
-const { Pomodoro, appendSession } = require('./pomodoro-core');
+const { Pomodoro, appendSession, appendEvent } = require('./pomodoro-core');
 
 app.setName('Pomodoro Timer');
 app.setAppUserModelId('local.pomodoro.timer');
@@ -41,10 +41,19 @@ async function saveCompletion() {
     savedPath = await appendSession(configPath, clock.state);
     clock.state.saved = true;
     persist();
+    recordEvent('completed', { sessionId: clock.state.id, minutes: clock.state.minutes, label: clock.state.label });
   } catch (error) {
     errorMessage = `Obsidian save failed: ${error.message}`;
     clock.state.saved = false;
   } finally { logging = false; publish(); }
+}
+let recording = false;
+function recordEvent(kind, info = {}) {
+  if (recording || !info.sessionId) return;
+  recording = true;
+  appendEvent(configPath, { kind, at: Date.now(), id: info.sessionId, minutes: info.minutes, label: info.label })
+    .catch(() => {})
+    .finally(() => { recording = false; });
 }
 function tick() {
   if (clock.tick()) {
@@ -96,9 +105,23 @@ else {
       return action(...args);
     });
     handle('timer:get', snapshot);
-    handle('timer:start', (minutes, label) => mutate(() => clock.start(minutes, label)));
-    handle('timer:pause', () => mutate(() => clock.pause()));
-    handle('timer:reset', () => mutate(() => clock.reset()));
+    handle('timer:start', (minutes, label) => mutate(() => {
+      const resumed = clock.state.status === 'paused';
+      clock.start(minutes, label);
+      recordEvent(resumed ? 'resumed' : 'started', { sessionId: clock.state.id, minutes: clock.state.minutes, label: clock.state.label });
+    }));
+    handle('timer:pause', () => mutate(() => {
+      if (clock.state.status === 'running') {
+        recordEvent('paused', { sessionId: clock.state.id, minutes: clock.state.minutes, label: clock.state.label });
+      }
+      clock.pause();
+    }));
+    handle('timer:reset', () => mutate(() => {
+      const sid = clock.state.id, minutes = clock.state.minutes, label = clock.state.label;
+      const hadSession = clock.state.status !== 'idle';
+      clock.reset();
+      if (hadSession && sid) recordEvent('reset', { sessionId: sid, minutes, label });
+    }));
     handle('timer:retry', async () => { await saveCompletion(); return snapshot(); });
     handle('window:close', () => window.close());
     handle('window:position', () => window.getPosition());

@@ -121,4 +121,40 @@ async function appendSession(configPath, session) {
   return logPath;
 }
 
-module.exports = { Pomodoro, validateInput, appendSession, logEntry, localDate };
+function eventLine(event) {
+  const date = new Date(event.at);
+  const label = validateInput(event.minutes || 1, event.label) || 'Focus session';
+  const escaped = label.replace(/[\\`*_{}\[\]<>]/g, '\\$&');
+  const time = date.toLocaleTimeString('en-GB');
+  const minute = `${event.minutes || 1} min${(event.minutes || 1) === 1 ? '' : 's'}`;
+  const head = `- ${date.toLocaleDateString('en-GB')} ${time} · ${event.kind}`;
+  if (event.kind === 'started' || event.kind === 'completed') return `${head}: **${escaped}** (${minute})`;
+  if (event.kind === 'paused' || event.kind === 'resumed' || event.kind === 'reset') return `${head}: **${escaped}**`;
+  return head;
+}
+
+async function appendEvent(configPath, event) {
+  const config = JSON.parse(await fs.readFile(configPath, 'utf8'));
+  if (typeof config.vaultPath !== 'string' || !config.vaultPath.trim() || !path.isAbsolute(config.vaultPath)) {
+    throw new Error('Set vaultPath in config.json to your Obsidian vault folder.');
+  }
+  const vault = path.resolve(config.vaultPath);
+  if (!(await fs.stat(vault)).isDirectory()) throw new Error('The configured vault is not a folder.');
+  const id = event.id || randomUUID();
+  const marker = `<!-- pomodoro-event: ${id} -->`;
+  const folder = path.join(vault, 'Pomodoro');
+  const file = path.join(folder, `${localDate(new Date(event.at))}.md`);
+  await fs.mkdir(folder, { recursive: true });
+  let existing = '';
+  try { existing = await fs.readFile(file, 'utf8'); }
+  catch (error) { if (error.code !== 'ENOENT') throw error; }
+  if (existing.includes(marker)) return file;
+  const handle = await fs.open(file, 'a');
+  try {
+    await handle.writeFile((existing.length ? '' : '# Pomodoro Activity\n\n') + eventLine(event) + ' ' + marker + '\n', 'utf8');
+    await handle.sync();
+  } finally { await handle.close(); }
+  return file;
+}
+
+module.exports = { Pomodoro, validateInput, appendSession, logEntry, localDate, appendEvent, eventLine };

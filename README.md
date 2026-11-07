@@ -38,10 +38,11 @@ The path is reread on every session save, so edits apply immediately.
 
 ## Logging behavior
 
-- Completed sessions append to `Pomodoro/Log.md` inside the vault.
+- **Activity journal** — every started / paused / resumed / reset / completed event appends to `Pomodoro/<YYYY-MM-DD>.md` in your vault, one line per event with a local timestamp, label, and duration. Ideal for reviewing where your time went.
+- Completed sessions also append to `Pomodoro/Log.md`.
 - An empty label is logged as “Focus session.”
 - Dates use your desktop's local timezone; completion timestamps are unambiguous ISO UTC values.
-- Each session has a unique ID — retrying a failed save never creates duplicates.
+- Each event/session carries a unique ID — retrying a failed save never creates duplicates.
 - Reset discards an *unfinished* session only; a completed session awaiting save is protected.
 
 ## Tests

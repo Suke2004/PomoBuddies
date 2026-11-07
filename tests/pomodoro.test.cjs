@@ -4,7 +4,7 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
-const { Pomodoro, appendSession, logEntry } = require('../pomodoro-core');
+const { Pomodoro, appendSession, logEntry, appendEvent, eventLine } = require('../pomodoro-core');
 
 test('countdown uses its deadline, pauses, resumes, finishes once and resets', () => {
   let now = 100000;
@@ -71,4 +71,40 @@ test('log is created, appended, deduplicated, escaped, and config is read on eac
   await fs.writeFile(config, '{broken');
   await assert.rejects(appendSession(config, session));
   assert.equal(await fs.readFile(log, 'utf8'), second);
+});
+
+test('activity journal appends daily entries, dedupes, and validates the vault', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'pomodoro-events-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const config = path.join(root, 'config.json');
+  await fs.writeFile(config, JSON.stringify({ vaultPath: root }));
+  const id = randomUUID();
+  const day = new Date(Date.now()).toISOString().slice(0, 10);
+  const journal = path.join(root, 'Pomodoro', `${day}.md`);
+
+  const started = await appendEvent(config, { kind: 'started', id, at: Date.now(), minutes: 25, label: 'study' });
+  assert.equal(started, journal);
+  const first = await fs.readFile(journal, 'utf8');
+  assert.match(first, /^# Pomodoro Activity/);
+  assert.match(first, /started: \*\*study\*\* \(25 mins\)/);
+  assert.ok(first.includes(`pomodoro-event: ${id}`));
+
+  // Dedupe: same event id is a no-op
+  await appendEvent(config, { kind: 'started', id, at: Date.now(), minutes: 25, label: 'study' });
+  assert.equal(await fs.readFile(journal, 'utf8'), first);
+
+  // New event appends
+  await appendEvent(config, { kind: 'paused', id: randomUUID(), at: Date.now(), minutes: 25, label: 'study' });
+  const second = await fs.readFile(journal, 'utf8');
+  assert.ok(second.startsWith(first));
+  assert.equal((second.match(/pomodoro-event:/g) || []).length, 2);
+
+  // Markdown escaping
+  const escaped = eventLine({ kind: 'started', at: Date.now(), minutes: 1, label: 'a\n## b' });
+  assert.ok(!escaped.includes('\n## b'));
+
+  // Broken config / missing vault are rejected
+  await fs.writeFile(config, JSON.stringify({ vaultPath: '' }));
+  await assert.rejects(appendEvent(config, { kind: 'started', id: randomUUID(), at: Date.now() }), /vaultPath/);
+  await assert.rejects(appendEvent(path.join(root, 'nope.json'), { kind: 'started', id: randomUUID(), at: Date.now() }));
 });
