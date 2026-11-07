@@ -80,7 +80,7 @@ test('activity journal appends daily entries, dedupes, and validates the vault',
   await fs.writeFile(config, JSON.stringify({ vaultPath: root }));
   const id = randomUUID();
   const day = new Date(Date.now()).toISOString().slice(0, 10);
-  const journal = path.join(root, 'Pomodoro', `${day}.md`);
+  const journal = path.join(root, 'Personal Tools', 'Pomodoro', `${day}.md`);
 
   const started = await appendEvent(config, { kind: 'started', id, at: Date.now(), minutes: 25, label: 'study' });
   assert.equal(started, journal);

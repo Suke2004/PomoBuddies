@@ -105,7 +105,7 @@ async function appendSession(configPath, session) {
   const vault = path.resolve(config.vaultPath);
   if (!(await fs.stat(vault)).isDirectory()) throw new Error('The configured vault is not a folder.');
   const entry = logEntry(session);
-  const folder = path.join(vault, 'Pomodoro');
+  const folder = path.join(vault, 'Personal Tools', 'Pomodoro');
   const logPath = path.join(folder, 'Log.md');
   await fs.mkdir(folder, { recursive: true });
   let existing = '';
@@ -142,7 +142,7 @@ async function appendEvent(configPath, event) {
   if (!(await fs.stat(vault)).isDirectory()) throw new Error('The configured vault is not a folder.');
   const id = event.id || randomUUID();
   const marker = `<!-- pomodoro-event: ${id} -->`;
-  const folder = path.join(vault, 'Pomodoro');
+  const folder = path.join(vault, 'Personal Tools', 'Pomodoro');
   const file = path.join(folder, `${localDate(new Date(event.at))}.md`);
   await fs.mkdir(folder, { recursive: true });
   let existing = '';
