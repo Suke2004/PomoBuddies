@@ -79,4 +79,4 @@ tests/               Unit + e2e suites
 
 ## License
 
-Private / personal tool — no license is applied. See the project owner before redistributing.
+[MIT](LICENSE) © 2026 lyricsofsongs96 — free to use, modify, and redistribute with attribution.

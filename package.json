@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "A floating pixel-art Pomodoro timer with Obsidian session logging",
   "private": true,
+  "license": "MIT",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
