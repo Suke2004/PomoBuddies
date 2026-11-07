@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; media-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Pomodoro Timer</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="renderer.js" defer></script>
+</head>
+<body data-theme="avocado">
+  <main class="character-widget" aria-label="Pomodoro Timer">
+    <div class="buddy">
+      <svg class="sprite" viewBox="0 0 40 48" aria-hidden="true" shape-rendering="crispEdges">
+        <g class="character cat">
+          <path class="outline body-fill" d="M7 3H10V4H12V6H14V8H26V6H28V4H30V3H33V5H34V8H35V11H36V16H37V37H36V40H34V42H31V44H9V43H6V41H4V38H3V16H4V11H5V8H6V5H7Z"/>
+          <path class="ear-inner" d="M7 6H10V8H12V10H7ZM30 6H33V10H28V8H30Z"/>
+          <path class="belly" d="M14 23H26V24H30V26H33V29H34V37H32V40H29V42H11V41H8V39H6V29H7V26H10V24H14Z"/>
+          <path class="fur-mark" d="M17 9H19V12H17ZM21 9H23V12H21Z"/>
+          <path class="face-ink" d="M5 20H9V21H5ZM5 23H9V24H5ZM31 20H35V21H31ZM31 23H35V24H31Z"/>
+          <path class="nose" transform="translate(0 -2)" d="M19 20H21V21H20V22H19Z"/>
+          <path class="face-ink" transform="translate(0 -2)" d="M17 22H18V23H20V22H21V23H23V22H24V24H21V23H20V24H17Z"/>
+        </g>
+        <g class="character dog">
+          <path class="outline body-fill" d="M15 4H25V5H29V7H32V9H34V12H35V16H36V27H37V37H36V40H33V43H29V45H11V44H7V42H5V39H3V29H4V16H5V12H6V9H9V7H12V5H15Z"/>
+          <path class="belly" d="M14 22H26V24H30V26H33V30H34V38H31V41H27V43H13V42H9V40H6V30H7V26H10V24H14Z"/>
+          <path class="outline ear" d="M7 10H11V12H10V22H8V24H4V22H3V16H4V13H5V11H7ZM29 10H33V11H35V13H36V16H37V22H36V24H32V22H30V12H29Z"/>
+          <path class="muzzle" transform="translate(0 -4)" d="M16 19H24V21H26V24H24V26H16V24H14V21H16Z"/>
+          <path class="face-ink" transform="translate(0 -4)" d="M18 20H22V22H21V23H19V22H18ZM16 24H19V25H21V24H24V25H22V26H18V25H16Z"/>
+          <path class="nose" transform="translate(0 -6)" d="M19 26H22V28H21V29H19Z"/>
+        </g>
+        <g class="character avocado">
+          <path class="outline stem" d="M19 7V3H20V1H22V5H26V3H29V5H27V7H23V9H19ZM18 7H15V5H12V3H15V4H18Z"/>
+          <path class="outline body-fill" d="M16 9H24V10H26V13H28V16H30V20H32V24H34V28H36V39H35V42H32V44H28V46H12V45H8V43H5V40H4V28H6V24H8V20H10V16H12V13H14V10H16Z"/>
+          <path class="flesh" d="M17 11H23V13H25V16H27V20H29V24H31V28H33V38H32V40H29V42H26V44H14V43H10V41H8V38H7V29H9V25H11V21H13V17H15V13H17Z"/>
+          <path class="speckles" d="M19 12H21V14H19ZM10 28H12V30H10ZM29 30H31V32H29ZM11 38H13V39H11ZM27 40H29V41H27Z"/>
+          <path class="face-ink" d="M18 21H22V22H18Z"/>
+          <path class="face-ink" d="M13 16H17V20H13ZM23 16H27V20H23Z"/>
+          <path class="eye-shine" d="M14 16H16V18H14ZM24 16H26V18H24Z"/>
+          <path class="blush" d="M10 21H13V23H10ZM27 21H30V23H27Z"/>
+        </g>
+        <g class="character tomato">
+          <path class="outline body-fill" d="M14 8H26V9H30V11H33V14H35V18H37V23H38V36H36V40H33V43H29V45H24V46H16V45H11V43H7V40H4V36H2V23H3V18H5V14H7V11H10V9H14Z"/>
+          <path class="outline stem" d="M19 7V3H21V7H26V5H28V8H25V10H22V12H18V10H15V8H12V6H15V7Z"/>
+          <path class="belly" d="M14 24H26V25H30V27H32V30H33V38H30V41H26V43H14V42H10V40H7V30H8V27H11V25H14Z"/>
+          <path class="shine" d="M7 19H9V22H8V27H6V22H7ZM10 15H12V17H10Z"/>
+          <path class="fur-mark" d="M8 32H10V34H8ZM30 27H32V29H30Z"/>
+          <path class="face-ink" transform="translate(0 -3)" d="M19 21H21V22H19ZM14 22H15V23H17V24H23V23H25V22H26V24H24V25H16V24H14Z"/>
+        </g>
+        <g class="character ben10">
+          <path class="outline body-fill" d="M13 4H27V6H30V9H32V20H30V23H34V26H36V39H33V43H28V45H12V44H7V41H4V27H6V24H10V21H8V9H10V6H13Z"/>
+          <path fill="#E9BC91" d="M10 10H30V20H28V22H12V20H10Z"/>
+          <path fill="#69422C" d="M13 4H27V6H30V9H31V13H28V10H24V9H20V11H16V9H13V13H9V8H11V6H13Z"/>
+          <path fill="#F2ECD8" d="M15 23H25V42H15Z"/>
+          <path fill="#273D34" d="M18 23H22V28H18ZM7 39H33V43H28V45H12V44H7Z"/>
+          <path class="face-ink" d="M12 14H16V18H12ZM24 14H28V18H24ZM18 20H22V21H18Z"/>
+          <path class="eye-shine" d="M13 14H15V16H13ZM25 14H27V16H25Z"/>
+          <path class="outline" fill="#273D34" d="M4 29H9V35H4Z"/>
+          <path fill="#A5E86A" d="M5 30H8V31H7V33H8V34H5V33H6V31H5Z"/>
+        </g>
+        <g class="character fourarms">
+          <path class="outline body-fill" d="M14 5H26V7H29V11H30V21H28V24H33V26H37V32H34V34H37V40H32V42H28V45H12V44H8V42H3V36H6V33H3V27H7V25H12V22H10V12H11V8H14Z"/>
+          <path fill="#F3E5CB" d="M15 23H25V40H15Z"/>
+          <path fill="#252B2C" d="M18 23H22V39H18ZM8 40H32V43H27V45H13V44H8Z"/>
+          <path class="face-ink" d="M12 12H16V15H12ZM24 12H28V15H24ZM12 17H16V20H12ZM24 17H28V20H24ZM17 21H23V22H17Z"/>
+          <path fill="#EFD374" d="M13 12H15V14H13ZM25 12H27V14H25ZM13 17H15V19H13ZM25 17H27V19H25Z"/>
+          <path fill="#AF3D3B" d="M4 28H10V30H4ZM30 28H36V30H30ZM4 37H9V39H4ZM31 37H36V39H31Z"/>
+        </g>
+        <g class="character harry">
+          <path class="outline body-fill" d="M12 4H27V6H30V10H31V19H29V23H33V27H35V41H32V45H8V43H5V29H7V25H11V22H9V10H10V6H12Z"/>
+          <path fill="#E9C29C" d="M11 9H29V20H27V23H13V21H11Z"/>
+          <path fill="#44312D" d="M12 4H27V6H30V10H27V8H25V11H22V9H19V11H16V8H13V12H10V8H12Z"/>
+          <path fill="#DCA952" d="M20 10H22V12H21V13H23V14H20V12H19V11H20Z"/>
+          <path fill="#7E353F" d="M12 22H28V25H24V31H20V25H12Z"/>
+          <path fill="#DCA952" d="M12 23H28V24H12ZM20 27H24V29H20Z"/>
+          <circle cx="14" cy="16" r="3.5" fill="none" stroke="#21152F" stroke-width="1"/>
+          <circle cx="26" cy="16" r="3.5" fill="none" stroke="#21152F" stroke-width="1"/>
+          <path class="face-ink" d="M18 15H22V16H18ZM13 15H15V18H13ZM25 15H27V18H25ZM18 21H22V22H18Z"/>
+          <path class="eye-shine" d="M13 15H14V16H13ZM25 15H26V16H25Z"/>
+          <path fill="#B48A51" d="M33 21H35V36H33Z"/>
+          <path fill="#E7BD61" d="M33 17H35V19H37V21H35V23H33V21H31V19H33Z"/>
+        </g>
+        <g class="character hedwig">
+          <path class="outline body-fill" d="M12 5H28V7H31V10H33V17H34V23H36V37H34V41H30V44H25V46H15V45H10V43H6V39H4V24H6V17H7V11H9V8H12Z"/>
+          <path fill="#DED6C4" d="M5 27H9V36H11V41H7V39H5ZM31 27H35V39H33V41H29V36H31Z"/>
+          <path fill="#FFF0D1" d="M10 10H18V12H22V10H30V20H27V23H13V21H10Z"/>
+          <circle cx="14" cy="16" r="4" fill="#B69354"/>
+          <circle cx="26" cy="16" r="4" fill="#B69354"/>
+          <path class="face-ink" d="M12 14H16V19H12ZM24 14H28V19H24Z"/>
+          <path class="eye-shine" d="M13 14H15V16H13ZM25 14H27V16H25Z"/>
+          <path fill="#BC843B" d="M18 21H22V22H21V24H19V22H18ZM12 44H16V46H12ZM24 44H28V46H24Z"/>
+          <path fill="#BEB4A0" d="M15 8H17V9H15ZM23 8H25V9H23ZM7 29H9V30H7ZM31 29H33V30H31ZM10 38H12V39H10ZM28 38H30V39H28Z"/>
+        </g>
+        <g class="character pikachu">
+          <path class="outline" fill="#E6BD43" d="M30 26H33V21H38V28H35V33H38V37H32Z"/>
+          <path class="outline body-fill" d="M6 2H9V5H11V10H13V12H27V10H29V5H31V2H34V12H32V17H34V23H35V28H36V39H33V43H28V45H12V44H7V41H4V28H5V23H6V18H8V12H6Z"/>
+          <path class="face-ink" d="M6 2H9V5H10V8H7V5H6ZM31 2H34V6H33V9H30V6H31ZM11 16H15V20H11ZM25 16H29V20H25Z"/>
+          <path class="eye-shine" d="M12 16H14V18H12ZM26 16H28V18H26Z"/>
+          <path fill="#DC5E48" d="M7 21H11V24H7ZM29 21H33V24H29Z"/>
+          <path class="face-ink" d="M19 20H21V21H19ZM16 22H18V23H20V22H21V23H23V22H25V24H21V23H20V24H16Z"/>
+          <path fill="#F7DF81" d="M11 26H29V41H27V43H13V42H10V29H11Z"/>
+          <path fill="#A77A35" d="M5 28H9V30H5ZM31 28H35V30H31Z"/>
+        </g>
+        <g class="character captain">
+          <path class="outline body-fill" d="M13 4H27V6H30V9H32V19H30V23H34V27H36V38H33V43H28V45H12V44H7V41H4V27H7V24H10V20H8V10H10V6H13Z"/>
+          <path fill="#E5B98F" d="M12 16H28V20H26V23H14V21H12Z"/>
+          <path fill="#F3E6C9" d="M18 8H22V9H23V13H21V11H19V13H17V9H18ZM19 9V10H21V9ZM5 11H9V15H7V13H5ZM31 11H35V13H33V15H31Z"/>
+          <path class="face-ink" d="M11 14H16V17H11ZM24 14H29V17H24ZM18 20H22V21H18Z"/>
+          <path class="eye-shine" d="M12 14H15V15H12ZM25 14H28V15H25Z"/>
+          <path fill="#CE5A55" d="M4 29H8V36H4ZM32 29H36V36H32ZM8 41H14V45H8ZM26 41H32V45H26Z"/>
+          <path fill="#F3E6C9" d="M14 25H26V41H14Z"/>
+          <path fill="#CE5A55" d="M16 27H18V40H16ZM22 27H24V40H22Z"/>
+          <path fill="#F3E6C9" d="M19 23H21V25H23V26H22V28H20V27H18V28H17V26H19Z"/>
+        </g>
+        <g class="character hulk">
+          <path class="outline body-fill" d="M12 4H28V6H31V10H32V20H29V24H34V26H37V39H34V42H29V45H11V44H6V41H3V27H6V24H11V21H8V10H9V6H12Z"/>
+          <path fill="#2D4334" d="M12 4H28V6H31V11H28V8H26V10H23V8H20V10H17V8H14V11H9V7H12Z"/>
+          <path class="face-ink" d="M11 13H14V14H17V16H14V15H11ZM23 14H26V13H29V15H26V16H23ZM12 16H16V19H12ZM24 16H28V19H24Z"/>
+          <path class="eye-shine" d="M13 16H15V17H13ZM25 16H27V17H25Z"/>
+          <path class="face-ink" d="M16 21H24V23H16Z"/>
+          <path fill="#E5E9C9" d="M17 21H23V22H17Z"/>
+          <path fill="#95C672" d="M10 26H30V39H10Z"/>
+          <path fill="#795998" d="M6 39H34V42H31V44H27V45H13V44H9V42H6Z"/>
+          <path fill="#536F42" d="M4 29H8V31H4ZM32 29H36V31H32Z"/>
+        </g>
+        <g class="character ironman">
+          <path class="outline body-fill" d="M13 4H27V6H30V10H32V20H29V24H34V27H36V39H33V43H28V45H12V44H7V41H4V28H6V25H11V21H8V10H10V6H13Z"/>
+          <path fill="#E4B75B" d="M13 8H27V11H29V18H27V21H23V23H17V22H13V19H11V12H13Z"/>
+          <path fill="#AB3D3A" d="M18 8H22V13H18ZM15 20H25V21H15Z"/>
+          <path fill="#A6E5E5" d="M12 14H17V16H14V15H12ZM23 14H28V15H26V16H23Z"/>
+          <path class="face-ink" d="M17 19H23V20H17Z"/>
+          <path fill="#E4B75B" d="M6 25H12V28H6ZM28 25H34V28H28ZM5 34H8V38H5ZM32 34H35V38H32ZM10 41H14V44H10ZM26 41H30V44H26Z"/>
+          <path fill="#7B3239" d="M11 27H29V40H11Z"/>
+          <path fill="#A6E5E5" d="M18 25H22V28H18Z"/>
+        </g>
+        <g class="features" transform="translate(0 -3)">
+          <path class="face-ink" d="M11 16H16V21H11ZM24 16H29V21H24Z"/>
+          <path class="eye-shine" d="M12 16H14V18H12ZM25 16H27V18H25Z"/>
+          <path class="blush" d="M8 22H11V24H8ZM29 22H32V24H29Z"/>
+        </g>
+      </svg>
+      <section class="display" aria-label="Countdown">
+        <span id="mode">READY TO FOCUS</span>
+        <output id="countdown" aria-label="Remaining time">25:00</output>
+        <p id="current-label" title="One thing at a time.">One thing at a time.</p>
+        <progress id="progress" value="0" max="1" aria-label="Session progress"></progress>
+      </section>
+    </div>
+    <button id="settings-toggle" type="button" aria-label="Timer settings" aria-expanded="false" aria-controls="settings-panel" title="Timer settings">⚙</button>
+    <section id="settings-panel" class="preferences" aria-label="Timer settings" hidden>
+      <header class="panel-heading"><h1><span aria-hidden="true">✦</span> BUDDY ARCADE</h1><button id="dismiss-settings" type="button" aria-label="Close settings">×</button></header>
+      <div class="selection-stage" role="group" aria-label="Character carousel">
+        <button id="previous-buddy" type="button" aria-label="Previous character">◀</button>
+        <div class="stage-player"><div id="stage-preview"></div><strong id="buddy-name"></strong><span id="buddy-series"></span></div>
+        <button id="next-buddy" type="button" aria-label="Next character">▶</button>
+      </div>
+      <div class="buddy-picker" role="group" aria-label="Choose your buddy"></div>
+      <form id="timer-form">
+        <div class="inputs">
+          <label class="duration-field" for="minutes">WIND UP YOUR TIMER <span>(minutes)</span></label>
+          <div class="duration-stepper"><button id="less-time" type="button" aria-label="Decrease duration by five minutes">−</button><input id="minutes" type="number" min="1" max="240" step="1" value="25" required disabled><button id="more-time" type="button" aria-label="Increase duration by five minutes">+</button></div>
+          <input id="duration-slider" type="range" min="1" max="240" step="1" value="25" aria-label="Adjust focus duration">
+          <div class="presets" role="group" aria-label="Quick durations"><button type="button" data-minutes="5">5 min</button><button type="button" data-minutes="25">25 min</button><button type="button" data-minutes="50">50 min</button></div>
+          <label class="label-field" for="label">Working on <span>(optional)</span><input id="label" type="text" maxlength="200" placeholder="e.g. film prep" autocomplete="off" disabled></label>
+        </div>
+        <div class="controls"><button id="start" type="submit" class="primary" disabled>Start</button><button id="pause" type="button" disabled>Pause</button><button id="reset" type="button" disabled>Reset</button></div>
+      </form>
+      <div class="status-row"><p id="status" role="status" aria-live="polite">Sessions save to Obsidian.</p><button id="retry" type="button" hidden>Retry save</button></div>
+      <button id="close" type="button" title="Close and pause timer">Close timer</button>
+    </section>
+  </main>
+  <audio id="completion-sound" src="completion.wav" preload="auto"></audio>
+</body>
+</html>
