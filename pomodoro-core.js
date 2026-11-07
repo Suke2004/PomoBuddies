@@ -132,15 +132,29 @@ function logEntry(session) {
     + `<!-- pomodoro-session: ${session.id} -->\n`;
 }
 
-async function appendSession(configPath, session) {
+async function loggingFolder(configPath, defaultFolder) {
   const config = JSON.parse(await fs.readFile(configPath, 'utf8'));
-  if (typeof config.vaultPath !== 'string' || !config.vaultPath.trim() || !path.isAbsolute(config.vaultPath)) {
-    throw new Error('Set vaultPath in config.json to your Obsidian vault folder.');
+  if (!config || typeof config !== 'object' || Array.isArray(config)) {
+    throw new Error('Logging configuration must be an object.');
   }
-  const vault = path.resolve(config.vaultPath);
-  if (!(await fs.stat(vault)).isDirectory()) throw new Error('The configured vault is not a folder.');
+  if (Object.hasOwn(config, 'vaultPath')) {
+    if (typeof config.vaultPath !== 'string' || !config.vaultPath.trim() || !path.isAbsolute(config.vaultPath)) {
+      throw new Error('Set vaultPath in config.json to your Obsidian vault folder.');
+    }
+    const vault = path.resolve(config.vaultPath);
+    if (!(await fs.stat(vault)).isDirectory()) throw new Error('The configured vault is not a folder.');
+    return path.join(vault, 'Personal Tools', 'Pomodoro');
+  }
+  const folder = config.logFolder === '' || config.logFolder === undefined ? defaultFolder : config.logFolder;
+  if (typeof folder !== 'string' || !folder.trim() || !path.isAbsolute(folder)) {
+    throw new Error('Set logFolder in config.json to an absolute folder path.');
+  }
+  return path.resolve(folder);
+}
+
+async function appendSession(configPath, session, defaultFolder) {
+  const folder = await loggingFolder(configPath, defaultFolder);
   const entry = logEntry(session);
-  const folder = path.join(vault, 'Personal Tools', 'Pomodoro');
   const logPath = path.join(folder, 'Log.md');
   await fs.mkdir(folder, { recursive: true });
   let existing = '';
@@ -172,16 +186,10 @@ function eventLine(event) {
   return head;
 }
 
-async function appendEvent(configPath, event) {
-  const config = JSON.parse(await fs.readFile(configPath, 'utf8'));
-  if (typeof config.vaultPath !== 'string' || !config.vaultPath.trim() || !path.isAbsolute(config.vaultPath)) {
-    throw new Error('Set vaultPath in config.json to your Obsidian vault folder.');
-  }
-  const vault = path.resolve(config.vaultPath);
-  if (!(await fs.stat(vault)).isDirectory()) throw new Error('The configured vault is not a folder.');
+async function appendEvent(configPath, event, defaultFolder) {
+  const folder = await loggingFolder(configPath, defaultFolder);
   const id = event.id || randomUUID();
   const marker = `<!-- pomodoro-event: ${id} -->`;
-  const folder = path.join(vault, 'Personal Tools', 'Pomodoro');
   const file = path.join(folder, `${localDate(new Date(event.at))}.md`);
   await fs.mkdir(folder, { recursive: true });
   let existing = '';

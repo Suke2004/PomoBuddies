@@ -1,13 +1,17 @@
 const { app, BrowserWindow, ipcMain, Notification } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
+const { randomUUID } = require('node:crypto');
 const { pathToFileURL } = require('node:url');
 const { Pomodoro, appendSession, appendEvent } = require('./pomodoro-core');
 
+// X11/XWayland supports the positioning and always-on-top APIs used by this widget.
+if (process.platform === 'linux') app.commandLine.appendSwitch('ozone-platform', 'x11');
 app.setName('Pomodoro Timer');
-app.setAppUserModelId('local.pomodoro.timer');
+if (process.platform === 'win32') app.setAppUserModelId('local.pomodoro.timer');
 if (process.env.POMODORO_DATA_DIR) app.setPath('userData', process.env.POMODORO_DATA_DIR);
-const configPath = process.env.POMODORO_CONFIG_PATH || path.join(__dirname, 'config.json');
+const defaultLogFolder = path.join(app.getPath('userData'), 'Logs');
+const configPath = process.env.POMODORO_CONFIG_PATH || path.join(app.isPackaged ? app.getPath('userData') : __dirname, 'config.json');
 const statePath = path.join(app.getPath('userData'), 'session.json');
 const clock = new Pomodoro();
 let window;
@@ -38,23 +42,23 @@ async function saveCompletion() {
   publish();
   try {
     persist();
-    savedPath = await appendSession(configPath, clock.state);
+    savedPath = await appendSession(configPath, clock.state, defaultLogFolder);
     clock.state.saved = true;
     persist();
     recordEvent('completed', { sessionId: clock.state.id, minutes: clock.state.minutes, label: clock.state.label,
       activeMs: clock.state.activeMs, pauseCount: clock.state.pauseCount, resumeCount: clock.state.resumeCount });
   } catch (error) {
-    errorMessage = `Obsidian save failed: ${error.message}`;
+    errorMessage = `Session save failed: ${error.message}`;
     clock.state.saved = false;
   } finally { logging = false; publish(); }
 }
-let recording = false;
+let eventQueue = Promise.resolve();
 function recordEvent(kind, info = {}) {
-  if (recording || !info.sessionId) return;
-  recording = true;
-  appendEvent(configPath, { kind, at: Date.now(), id: info.sessionId, minutes: info.minutes, label: info.label })
-    .catch(() => {})
-    .finally(() => { recording = false; });
+  if (!info.sessionId) return;
+  const event = { ...info, kind, at: Date.now(),
+    id: kind === 'completed' ? `${info.sessionId}-completed` : randomUUID() };
+  // Serialize journal appends so rapid timer actions cannot skip or race each other.
+  eventQueue = eventQueue.then(() => appendEvent(configPath, event, defaultLogFolder)).catch(() => {});
 }
 function tick() {
   if (clock.tick()) {
@@ -80,6 +84,12 @@ if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance', () => { if (window) { window.show(); window.focus(); } });
   app.whenReady().then(() => {
+    if (!process.env.POMODORO_CONFIG_PATH) {
+      fs.mkdirSync(defaultLogFolder, { recursive: true });
+      if (app.isPackaged && !fs.existsSync(configPath)) {
+        fs.writeFileSync(configPath, JSON.stringify({ logFolder: defaultLogFolder }, null, 2), { flag: 'wx' });
+      }
+    }
     try {
       if (fs.existsSync(statePath)) clock.restore(JSON.parse(fs.readFileSync(statePath, 'utf8')));
     } catch (error) {
@@ -90,10 +100,10 @@ else {
     }
     window = new BrowserWindow({ width: 280, height: 340, title: 'Pomodoro Timer',
       alwaysOnTop: true, frame: false, transparent: true, resizable: false, maximizable: false,
-      backgroundColor: '#00000000', show: false,
+      backgroundColor: '#00000000', show: false, icon: path.join(__dirname, 'assets', 'app-icon.png'),
       webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true,
         nodeIntegration: false, sandbox: true, backgroundThrottling: false } });
-    window.setMenu(null);
+    if (process.platform !== 'darwin') window.setMenu(null);
     window.once('ready-to-show', () => window.setAlwaysOnTop(true, 'screen-saver'));
     window.once('ready-to-show', () => window.show());
     window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));

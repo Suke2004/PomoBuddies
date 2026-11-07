@@ -1,17 +1,74 @@
 {
   "name": "pomodoro-hermes",
-  "version": "1.0.0",
-  "description": "A floating pixel-art Pomodoro timer with Obsidian session logging",
+  "version": "1.1.2",
+  "description": "A floating pixel-art Pomodoro timer with an avatar dial and automatic local session logging",
   "private": true,
   "license": "MIT",
+  "homepage": "https://github.com/Suke2004/PomoBuddies",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "test:pomodoro": "node --test tests/pomodoro.test.cjs",
-    "test:pomodoro:e2e": "node tests/pomodoro.e2e.cjs"
+    "test:pomodoro:e2e": "node tests/pomodoro.e2e.cjs",
+    "test:pomodoro:packaged": "node tests/pomodoro.e2e.cjs --packaged",
+    "test:pomodoro:animations": "node tests/animations.e2e.cjs",
+    "dist": "electron-builder --win nsis --x64",
+    "dist:linux": "electron-builder --linux --x64 --publish never",
+    "dist:mac": "electron-builder --mac --x64 --arm64 --publish never"
+  },
+  "build": {
+    "appId": "local.pomodoro.timer",
+    "productName": "PomoBuddies",
+    "directories": {
+      "output": "dist",
+      "buildResources": "assets"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "pomodoro-core.js",
+      "index.html",
+      "renderer.js",
+      "styles.css",
+      "config.json",
+      "completion.wav",
+      "assets/app-icon.png",
+      "assets/avatar-smoke.png",
+      "LICENSE"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/app-icon.ico",
+      "executableName": "PomoBuddies"
+    },
+    "mac": {
+      "target": ["dmg", "zip"],
+      "icon": "assets/app-icon.icns",
+      "category": "public.app-category.productivity",
+      "artifactName": "PomoBuddies-${version}-mac-${arch}.${ext}"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "icon": "assets/app-icon.png",
+      "executableName": "pomobuddies",
+      "category": "Utility",
+      "maintainer": "PomoBuddies",
+      "artifactName": "PomoBuddies-${version}-linux-${arch}.${ext}"
+    },
+    "nsis": {
+      "include": "assets/installer.nsh",
+      "artifactName": "PomoBuddies-Setup-${version}.exe",
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "PomoBuddies"
+    }
   },
   "devDependencies": {
     "electron": "44.10.2",
+    "electron-builder": "26.18.0",
     "playwright": "1.64.1"
   }
 }

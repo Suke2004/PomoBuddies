@@ -84,10 +84,10 @@ test('activity journal appends daily entries, dedupes, and validates the vault',
   const config = path.join(root, 'config.json');
   await fs.writeFile(config, JSON.stringify({ vaultPath: root }));
   const id = randomUUID();
-  const day = new Date(Date.now()).toISOString().slice(0, 10);
-  const journal = path.join(root, 'Personal Tools', 'Pomodoro', `${day}.md`);
+  const at = new Date(2026, 10, 8, 0, 1).getTime();
+  const journal = path.join(root, 'Personal Tools', 'Pomodoro', '2026-11-08.md');
 
-  const started = await appendEvent(config, { kind: 'started', id, at: Date.now(), minutes: 25, label: 'study' });
+  const started = await appendEvent(config, { kind: 'started', id, at, minutes: 25, label: 'study' });
   assert.equal(started, journal);
   const first = await fs.readFile(journal, 'utf8');
   assert.match(first, /^# Pomodoro Activity/);
@@ -95,11 +95,11 @@ test('activity journal appends daily entries, dedupes, and validates the vault',
   assert.ok(first.includes(`pomodoro-event: ${id}`));
 
   // Dedupe: same event id is a no-op
-  await appendEvent(config, { kind: 'started', id, at: Date.now(), minutes: 25, label: 'study' });
+  await appendEvent(config, { kind: 'started', id, at, minutes: 25, label: 'study' });
   assert.equal(await fs.readFile(journal, 'utf8'), first);
 
   // New event appends
-  await appendEvent(config, { kind: 'paused', id: randomUUID(), at: Date.now(), minutes: 25, label: 'study' });
+  await appendEvent(config, { kind: 'paused', id: randomUUID(), at: at + 2000, minutes: 25, label: 'study' });
   const second = await fs.readFile(journal, 'utf8');
   assert.ok(second.startsWith(first));
   assert.equal((second.match(/pomodoro-event:/g) || []).length, 2);
@@ -112,6 +112,34 @@ test('activity journal appends daily entries, dedupes, and validates the vault',
   await fs.writeFile(config, JSON.stringify({ vaultPath: '' }));
   await assert.rejects(appendEvent(config, { kind: 'started', id: randomUUID(), at: Date.now() }), /vaultPath/);
   await assert.rejects(appendEvent(path.join(root, 'nope.json'), { kind: 'started', id: randomUUID(), at: Date.now() }));
+});
+
+test('local logging creates its default folder, supports overrides, and rejects invalid paths', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'pomodoro-local-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const config = path.join(root, 'config.json');
+  const defaultFolder = path.join(root, 'user-data', 'Logs');
+  const session = { id: randomUUID(), minutes: 1, label: 'local focus', completedAt: Date.now() };
+  await fs.writeFile(config, JSON.stringify({ logFolder: '' }));
+  const log = await appendSession(config, session, defaultFolder);
+  assert.equal(log, path.join(defaultFolder, 'Log.md'));
+  const first = await fs.readFile(log, 'utf8');
+  await appendSession(config, session, defaultFolder);
+  assert.equal(await fs.readFile(log, 'utf8'), first);
+  const event = { kind: 'started', id: randomUUID(), at: Date.now(), minutes: 1, label: 'local focus' };
+  const journal = await appendEvent(config, event, defaultFolder);
+  assert.equal(path.dirname(journal), defaultFolder);
+  assert.match(await fs.readFile(journal, 'utf8'), /local focus/);
+
+  const override = path.join(root, 'custom-logs');
+  await fs.writeFile(config, JSON.stringify({ logFolder: override }));
+  assert.equal(await appendSession(config, session, defaultFolder), path.join(override, 'Log.md'));
+  for (const logFolder of ['relative-folder', ' ', false, 42, null]) {
+    await fs.writeFile(config, JSON.stringify({ logFolder }));
+    await assert.rejects(appendSession(config, session, defaultFolder), /logFolder/);
+    await assert.rejects(appendEvent(config, event, defaultFolder), /logFolder/);
+  }
+  assert.equal(await fs.readFile(log, 'utf8'), first);
 });
 
 test('tracks active focus, pauses and resumes across segments for the agent log', () => {
