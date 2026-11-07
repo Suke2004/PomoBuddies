@@ -11,7 +11,7 @@ A floating, always-on-top pixel-art Pomodoro timer built with Electron. Twelve p
   - set a duration with a slider/stepper or quick presets
   - add a label for the session
   - Start / Pause / Reset, save status, and a Close-timer button
-- **Obsidian logging** — completed sessions append to `Pomodoro/Log.md` in your vault.
+- **Obsidian logging** — completed sessions append to `Personal Tools/Pomodoro/Log.md` in your vault, and every timer event to the daily activity journal.
 - **State safety** — closing the timer mid-run pauses and preserves it; it reopens paused. Timer state is written atomically (temp file + `fsync` + rename), so a crash never corrupts it.
 - **Duplicate-proof logs** — each session carries a unique ID; interrupted or failed saves are retained and retryable via the UI.
 - **Respects your system** — `prefers-reduced-motion` is honored, and theme choice persists in `localStorage`.
@@ -44,6 +44,7 @@ The path is reread on every session save, so edits apply immediately.
 - Dates use your desktop's local timezone; completion timestamps are unambiguous ISO UTC values.
 - Each event/session carries a unique ID — retrying a failed save never creates duplicates.
 - Reset discards an *unfinished* session only; a completed session awaiting save is protected.
+- **Agent tracking** — the vault map `03-Systems/Templates/Memory/tool-tracking.md` documents every log location, format, reading order and reliability guarantee, so a tracking agent can reconstruct where your time went.
 
 ## Tests
 
